@@ -1,6 +1,7 @@
 # server_comm.py
 
 import socket
+import os
 
 class AccessControl:
     def __init__(self):
@@ -8,7 +9,28 @@ class AccessControl:
             
     def has_permission(self, role, action):
         return action in self.role_permissions.get(role, [])
-    
+class UserInterface:
+    def __init__(self, host='localhost', port=12345):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        return self.sock
+    def connect(self):
+        try:
+            self.sock.connect(host='localhost', port=12345)
+            print("Connected to the server.")
+        except Exception as e:
+            # handle connection errors
+            print(f"Failed to connect to the server. Error: {e}")
+    def send_message(self, message):
+        if not isinstance(message, str):
+            raise TypeError('Message must be a string')
+        else:
+            self.sock.sendall(message.encode())
+            
+    def receive_message(self, message):
+        data = self.sock.recv(1024).decode()
+        return data
+    def close_connection(self):
+        self.sock.close()            
 class ServerCommunicator:
     def __init__(self):
         self.server_address = ('127.0.0.1', 8080)
@@ -49,6 +71,38 @@ class ServerCommunicator:
                 print("La communication est terminée.")
                 self.disconnect()
                 
+
+    # Envoyer les données du serveur
+    def send_file(self, filepath, filename=None):
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"Le fichier {filepath} n'existe pas.")
+        elif not os.path.isfile(filepath):
+            raise IsADirectoryError(f"{filepath} n'est pas un fichier.")
+        else:
+            with open(filepath, 'rb') as f:
+                filesize = os.path.getsize(filepath)
+                if filename is None:
+                    filename = os.path.basename(filepath)
+                    header = f"SendFile:{os.path.join(os.path.dirname(filepath), filename)}:{filesize}"
+                else:
+                    header = f"SendFile:{os.path.join(os.path.dirname(filepath), filename)}:{filesize}"
+                
+                # Envoyer le header avant de transmettre le fichier
+            self.client_socket.send(header.encode('utf-8'))
+            if self.recv_confirmation():
+                data = f.read(4096)
+                while data:
+                    self.client_socket.send(data)
+                    data = f.read(4096)    
+        print(f"Fichier {filename} envoyé.")
+    def recv_confirmation(self):
+        confirmation = self.client_socket.recv(4096).decode('utf-8')
+        if confirmation == "ReadyToReceive":
+            return True
+        else:
+            raise ConnectionError("Erreur de confirmation du serveur.")
+            return False
+                    
     # Obtenir la liste des machines virtuelles autorisées
     def get_allowed_vms(self):
         # Code pour obtenir la liste des machines virtuelles autorisées
