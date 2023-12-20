@@ -4,11 +4,8 @@ import socket
 
 class AccessControl:
     def __init__(self):
-        self.role_permissions = {
-            "user": ["read"],
-            "admin": ["read", "write"]
-        }
-    
+        self.role_permissions = {"user": ["read"], "admin": ["read", "write"]}
+            
     def has_permission(self, role, action):
         return action in self.role_permissions.get(role, [])
     
@@ -35,12 +32,73 @@ class ServerCommunicator:
         # Code pour envoyer des données au serveur
         if self.client_socket:
             role = self.vm_roles.get(vm_name, "user")
-            if self.access_control.has_permission(role, "write"):
+            if self.access_control.has_permission(role, "write"): 
                 self.client_socket.sendall(data.encode('utf-8'))
                 print(f"Données envoyées au serveur depuis {vm_name} avec le rôle {role} : {data}")
             else:
-                print(f"L'accès en écriture n'est pas autorisé pour {vm_name} avec le rôle {role}.")   
+                print(f"L'accès en écriture n'est pas autorisé pour {vm_name} avec le rôle {role}.")
+                
+    # Recevoir des données du serveur
+    def receive_data(self):
+        if self.client_socket:
+            received_data = self.client_socket.recv(4096).decode('utf-8')
+            if len(received_data) > 0:
+                print(f"Reçu de la part du serveur : {received_data}")
+                return received_data
+            else:
+                print("La communication est terminée.")
+                self.disconnect()
+                
+    # Obtenir la liste des machines virtuelles autorisées
+    def get_allowed_vms(self):
+        # Code pour obtenir la liste des machines virtuelles autorisées
+        allowed_vms = list(self.vm_roles.keys())
+        allowed_vms = []
+        for vm in allowed_vms:
+            if self.access_control.has_permission("admin", "read") or self.access_control.has_permission(self.vm_roles[vm], "read"): allowed_vms.append(vm)
+            return allowed_vms
+        
+    def set_vm_role(self, vm_name, role):
+        """Ajoute ou modifie un couple nom - rôle d'une machine virtuelle"""
+        self.vm_roles[vm_name] = role
+        print(f"Le rôle de {vm_name} a été défini sur {role}.")
     
+    # Obtenir la liste des permissions associées à un rôle donné à une machine virtuelle spécifique   
+    def get_vm_role_permissions(self, role):
+        try:
+            vms_with_this_role = [k for k, v in self.vm_roles.items() if v == role and k in self.access_control.roles]
+            return vms_with_this_role
+        except KeyError as e:
+            raise ValueError(f"Rôle '{e}' inconnu.")
+        
+    # Obtenir les anciens et nouveaux rôles pour machine virtuelle spécifique
+    def update_vm_role(self, old_vm, new_vm):
+        if old_vm not in self.vm_roles and new_vm not in self.vm_roles:
+            raise ValueError("Aucune modification ne peut être apportée à un nouveau ou ancien VM.")
+        elif old_vm in self.vm_roles and new_vm not in self.vm_roles:
+            del self.vm_roles[old_vm]
+            print(f"Le rôle de l'ancienne VM '{old_vm}' a été supprimé.")
+        elif old_vm not in self.vm_roles and new_vm in self.vm_roles:
+            self.vm_roles[new_vm] = 'admin'
+            print(f"Le rôle de la nouvelle VM '{new_vm}' a été ajouté.")
+        else:
+            print(f"Le rôle de la nouvelle VM '{new_vm}' a été ajouté.")
+                
+    # Obtenir les rôles autorisés pour une machine virtuelle spécifique
+    def get_vm_roles(self, vm_name):
+        roles = self.vm_roles.get(vm_name, [])
+        return roles
+    
+    # Changer le rôle d'une machine virtuelle autorisée
+    def change_vm_role(self, vm_name, new_role, old_roles):
+        # Code pour changer le rôle d'une machine virtuelle autorisée
+        if vm_name in self.vm_roles:
+            if new_role not in old_roles:
+                self.vm_roles[vm_name] = new_role
+                print(f"Le rôle de {vm_name} a été modifié à {new_role}.")
+            else:
+                print(f"l'accès au serveur pour {vm_name} n'est pas autorisé.")
+                   
     def allow_access(self, vm_name, roles="user"):
         # Code pour autoriser l'accès au serveur pour une machine virtuelle spécifique
         if vm_name not in self.vm_roles:
