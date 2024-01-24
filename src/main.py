@@ -5,34 +5,33 @@ from network_admin import NetworkAdmin
 from server_comm import ServerCommunicator
 
 def main():
-    #Initialisation des modules 
+    # Module initialization 
     vm_manager = VMManager()
     network_admin = NetworkAdmin()
     server_comm = ServerCommunicator()
     
     try:
-        # Création des machines virtuelles 
-        vm_manager.create_vm("vm1", memory=1024, vcpu=1, disk_size=10)
-        vm_manager.create_vm("vm2", memory=2048, vcpu=2, disk_size=20)
-        
-        # Déploiement des machines virtuelles
+        # Creation of virtual machines 
+        vm_manager.create_vm("vm1", memory=1024, vcpu=1,)
+        vm_manager.create_vm("vm2", memory=2048, vcpu=2,)
+        # Deployment of virtual machines
         vm_manager.deploy_vms()
         
-        # Configuration réseau des machines virtuelles
-        network_admin.configure_networks()
+        # Network configuration of virtual machines
+        network_admin.configure_network()
         
-        # Communication avec le serveur
+        # Communication with the server
         server_comm.connect()
-        server_comm.send_data("Données à envoyer au serveur")
+        server_comm.send_data("Data to send to server")
         
-        # Exemple de gestion d'accès au serveur pour une machine virtuelle spécifique
+        # Example of server access management for a specific virtual machine
         server_comm.allow_access("vm1")
-        server_comm.deny.access("vm2")
+        server_comm.deny_access("vm2")
     except Exception as e:
-        print(f"Erreur dans l'exécution du programme : {e}")
+        print(f"Error executing program: {e}")
     
     finally: 
-        # Déconnexion du serveur
+        # # Disconnect from server
         server_comm.disconnect()
-if __name__ == "__name__":
+if __name__ == "__main__": # Correction here
     main()      
